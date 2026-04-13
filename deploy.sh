@@ -43,7 +43,7 @@ kubectl create svc clusterip postgres-svc --tcp=5432:5432 --dry-run=client -o ya
 kubectl create deployment postgres --image=postgres:15-alpine --dry-run=client -o yaml > "$WORKING_DIR/base/postgres/postgres-deployment.yaml"
 
 # Imperative command to create the fact application deployment
-kubectl create deployment fact-backend-deployment --image=succesc/fact-app:v1 --port=5000 --dry-run=client -o yaml > "$WORKING_DIR/base/fact-backend/backend-deployment.yaml"
+kubectl create deployment fact-backend-deployment --image=succesc/fact-app:v3 --port=5000 --dry-run=client -o yaml > "$WORKING_DIR/base/fact-backend/backend-deployment.yaml"
 
 # Imperative command to create the service for the fact application
 kubectl create svc clusterip backend-svc --tcp=5000:5000 --dry-run=client -o yaml > "$WORKING_DIR/base/fact-backend/backend-service.yaml"
