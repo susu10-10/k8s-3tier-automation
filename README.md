@@ -149,15 +149,15 @@ Namespace: `test-app` (PSA label `privileged` will be hardened in Phase 2)
 
 ResourceQuota:
 
-- CPU: 2 cores (requests + limits)
+- CPU: `2` cores (requests + limits)
 
-- Memory: 4Gi
+- Memory: `4Gi`
 
 LimitRange:
 
-- Default request: 100m CPU / 128Mi memory
+- Default request: `100m` CPU / `128Mi` memory
 
-- Default limit: 200m CPU / 256Mi memory
+- Default limit: `200m` CPU / `256Mi` memory
 
 This prevents any single pod from hogging the cluster and ensures predictable performance.
 
@@ -179,4 +179,3 @@ If you find a bug or have a suggestion, please open an issue or a pull request.
 # 📜 License
 
 MIT – feel free to use this as a template for your own security labs.
-
