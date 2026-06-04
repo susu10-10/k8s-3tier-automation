@@ -1,11 +1,45 @@
 # 3-Tier K8s Automation: Phase 1
 
-# Phase 1: Decoupled Microservices on Kubernetes (CKAD‑style)
+# Phase 1: Decoupled Microservices on Kubernetes
+
+```mermaid
+graph TB
+    subgraph "Kubernetes Cluster"
+        subgraph "Namespace: test-app"
+            User((User)) --> FrontendSVC[Frontend Service<br/>port: 80]
+            FrontendSVC --> FrontendPod[Nginx Pod<br/>serves UI + proxy]
+            
+            FrontendPod --> BackendSVC[Backend Service<br/>port: 5000]
+            BackendSVC --> BackendPod[Flask API Pod<br/>REST endpoints]
+            
+            BackendPod --> DBSVC[PostgreSQL Service<br/>port: 5432]
+            DBSVC --> DBPod[PostgreSQL Pod<br/>15-alpine]
+            
+            DBPod --> PVC[PersistentVolumeClaim<br/>storage for facts]
+            
+            subgraph "Kustomize Structure"
+                KustomizeBase[Base/ manifests<br/>common to all envs]
+                OverlayDev[Overlay: dev/<br/>env-specific patches]
+                OverlayProd[Overlay: prod/<br/>resource limits]
+            end
+        end
+    end
+    
+    InitContainer[initContainer<br/>waits for DB ready] -.-> BackendPod
+    ResourceQuota[ResourceQuota<br/>CPU: 2 cores, Mem: 4Gi] -.-> Namespace
+    LimitRange[LimitRange<br/>default req/limit per pod] -.-> Namespace
+    
+    style User fill:#e1f5fe,stroke:#01579b
+    style FrontendPod fill:#fff3e0,stroke:#e65100
+    style BackendPod fill:#fff3e0,stroke:#e65100
+    style DBPod fill:#e8f5e9,stroke:#1b5e20
+    style PVC fill:#f3e5f5,stroke:#4a148c
+    style InitContainer fill:#fff8e1,stroke:#f57f17
+    style ResourceQuota fill:#ffebee,stroke:#b71c1c
+    style LimitRange fill:#ffebee,stroke:#b71c1c
+```
 
 **Goal:** Deploy a three‑tier application (PostgreSQL + Flask API + Nginx frontend) using **Kustomize**, **initContainers**, **resource governance**, and **declarative YAML**. No manual `kubectl` commands.  
-
-This is the foundation of a **zero‑trust security lab**. 
-Phase 2 will add network policies, security contexts, OPA, and image scanning.
 
 ---
 
@@ -13,9 +47,9 @@ Phase 2 will add network policies, security contexts, OPA, and image scanning.
 
 | Component           | Technology                     | Purpose                                                               |            
 |---------------------|--------------------------------|-----------------------------------------------------------------------|
-| **Database**        | PostgreSQL 15-alpine                  | Persistent storage for mystery facts                                  |
-| **Backend**         | Flask API (Python)             | REST endpoints `/api/facts`, `/api/facts/random`, `/api/facts` (POST) |
-| **Frontend**        | Nginx + static HTML            | Serves UI, proxies `/api/` to backend                                 |
+| **Database**        | PostgreSQL 15-alpine                  | Persistent storage for mystery facts. Uses PVC for data persistence                                  |
+| **Backend**         | Flask API (Python)             | REST endpoints `/api/facts`, `/api/facts/random`, `/api/facts` (POST). Depends on PostgreSQL via initContainer |
+| **Frontend**        | Nginx + static HTML            | Serves UI, proxies `/api/` to backend-svc:5000                                 |
 | **Orchestration**   | Kustomize (overlays + patches) | Environment‑agnostic YAML composition                                 |
 | **Governance**      | ResourceQuota + LimitRange     | CPU/memory limits, storage quota                                      |
 | **Dependency mgmt** | initContainer                  | Waits for PostgreSQL to be ready                                      |
@@ -37,19 +71,19 @@ I implemented a `ReadinessProbe` using `pg_isready`. This ensures the database i
 [![asciicast](https://asciinema.org/a/IMoi0RTt3UmS3cSG.svg)](https://asciinema.org/a/IMoi0RTt3UmS3cSG)
 
 > `kubectl get all -n test-app` 
-![alt text](image-3.png) 
+![alt text](./docs/image-3.png) 
 
 > `kubectl port-forward svc/frontend-svc 8080:80` → browser showing the Mystery Fact Machine.
 
-![alt text](image-1.png)
+![alt text](./docs/image-1.png)
 
-![alt text](image-2.png)
+![alt text](./docs/image-2.png)
 
 ---
 
 ## 📁 Repository Structure
 
-![alt text](image.png)
+![alt text](./docs/image.png)
 
 
 ---
@@ -93,7 +127,7 @@ I implemented a `ReadinessProbe` using `pg_isready`. This ensures the database i
 `kubectl port-forward -n test-app svc/frontend-svc 8080:80`
 
       http://localhost:8080 in your browser.
-      Add a fact -> it appears. Click "Random Fact" -> a random fact is shown.
+Add a fact -> it appears. Click "Random Fact" -> a random fact is shown.
 
 
 # 🔍  Key CKAD Concepts Demonstrated
@@ -111,30 +145,29 @@ I implemented a `ReadinessProbe` using `pg_isready`. This ensures the database i
 
 # 📊 Resource Governance
 
-Namespace: `test-app` (PSA label `privileged` – will be tightened in Phase 2)
+Namespace: `test-app` (PSA label `privileged` will be hardened in Phase 2)
 
 ResourceQuota:
 
-CPU: 2 cores (requests + limits)
+- CPU: 2 cores (requests + limits)
 
-Memory: 4Gi
+- Memory: 4Gi
 
 LimitRange:
 
-Default request: 100m CPU / 128Mi memory
+- Default request: 100m CPU / 128Mi memory
 
-Default limit: 200m CPU / 256Mi memory
+- Default limit: 200m CPU / 256Mi memory
 
-This prevents any single pod from starving the cluster and ensures predictable performance.
+This prevents any single pod from hogging the cluster and ensures predictable performance.
 
 
-# 🗺️ What’s Next? (Phase 2 – Security Hardening)
+# 🗺️ What’s Next? (Phase 2 Security Hardening)
+
 Phase 2 will transform this working application into a zero‑trust, least‑privilege environment:
 
 
-
-> Stay tuned – the same Kustomize structure will be extended with security overlays.
-
+> Stay tuned, the same Kustomize structure will be extended with security overlays.
 
 
 # 🤝 Contributing / Feedback
@@ -144,5 +177,6 @@ If you find a bug or have a suggestion, please open an issue or a pull request.
 
 
 # 📜 License
+
 MIT – feel free to use this as a template for your own security labs.
 
