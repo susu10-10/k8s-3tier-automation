@@ -2,7 +2,6 @@
 
 # Phase 1: Decoupled Microservices on Kubernetes (CKAD‑style)
 
-**Author:** Su (CKAD, Sec+ candidate)  
 **Goal:** Deploy a three‑tier application (PostgreSQL + Flask API + Nginx frontend) using **Kustomize**, **initContainers**, **resource governance**, and **declarative YAML**. No manual `kubectl` commands.  
 
 This is the foundation of a **zero‑trust security lab**. 
